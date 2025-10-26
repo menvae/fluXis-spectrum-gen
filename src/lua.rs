@@ -76,19 +76,25 @@ fn init_config(file: &mut File) -> Result<(), Box<dyn std::error::Error>> {
 
 fn helpers(file: &mut File, bands: usize) -> Result<(), Box<dyn std::error::Error>> {
     writeln!(file, "    -- helpers")?;
-    writeln!(file, "    local function merge_bands(frame)")?;
-    writeln!(file, "        local merged = {{}}")?;
-    writeln!(file, "        local bands_per_bar = {} / num_visual_bars", bands)?;
-    writeln!(file, "        for i = 1, num_visual_bars do")?;
-    writeln!(file, "            local start_idx = math.floor((i - 1) * bands_per_bar) + 1")?;
-    writeln!(file, "            local end_idx = math.floor(i * bands_per_bar)")?;
-    writeln!(file, "            local sum = 0")?;
-    writeln!(file, "            for j = start_idx, end_idx do")?;
-    writeln!(file, "                sum = sum + frame.bands[j]")?;
-    writeln!(file, "            end")?;
-    writeln!(file, "            merged[num_visual_bars - i + 1] = sum / (end_idx - start_idx + 1)")?; // reversed so that bass is on left
+    writeln!(file, "    local num_bands = {}", bands)?;
+    writeln!(file)?;
+    
+    writeln!(file, "    local function get_interpolated_band(frame, bar_idx)")?;
+    writeln!(file, "        local reversed_idx = num_visual_bars - bar_idx + 1")?;
+    writeln!(file)?;
+    writeln!(file, "        local band_pos = (reversed_idx - 1) / (num_visual_bars - 1) * (num_bands - 1) + 1")?;
+    writeln!(file, "        local band_idx = math.floor(band_pos)")?;
+    writeln!(file, "        local t = band_pos - band_idx")?;
+    writeln!(file)?;
+    writeln!(file, "        if band_idx >= num_bands then")?;
+    writeln!(file, "            return frame.bands[num_bands]")?;
+    writeln!(file, "        elseif band_idx < 1 then")?;
+    writeln!(file, "            return frame.bands[1]")?;
     writeln!(file, "        end")?;
-    writeln!(file, "        return merged")?;
+    writeln!(file)?;
+    writeln!(file, "        local val1 = frame.bands[band_idx]")?;
+    writeln!(file, "        local val2 = frame.bands[math.min(band_idx + 1, num_bands)]")?;
+    writeln!(file, "        return mathf:lerp(val1, val2, t)")?;
     writeln!(file, "    end\n")?;
     
     writeln!(file, "    local function process_value(val, bar_idx, min_val, max_val)")?;
@@ -140,8 +146,7 @@ fn create_bars(
     writeln!(file, "            local next_frame = samples[frame_idx + 1]")?;
     writeln!(file, "            local time = current_frame.time")?;
     writeln!(file, "            local duration = next_frame.time - current_frame.time")?;
-    writeln!(file, "            local merged = merge_bands(current_frame)")?;
-    writeln!(file, "            local val = merged[i]")?;
+    writeln!(file, "            local val = get_interpolated_band(current_frame, i)")?;
     writeln!(file, "            local normalized = process_value(val, i, min_val, max_val)")?;
     writeln!(file, "            local height = min_height + (normalized * (max_height - min_height))")?;
     writeln!(file, "            box:animate(\"ScaleVector\", time, duration,")?;
