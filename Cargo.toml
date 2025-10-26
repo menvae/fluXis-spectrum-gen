@@ -1,0 +1,23 @@
+[package]
+name = "fluXis-spectrum-gen"
+version = "0.0.1"
+edition = "2024"
+authors = ["menvae"]
+license = "Unlicense"
+repository = "https://github.com/menvae/fluXis-spectrum-gen"
+description = "Audio spectrum generator for fluXis"
+readme = "README.md"
+
+[dependencies]
+symphonia = { version = "0.5.5", features = ["mp3", "ogg"] }
+rustfft = "6.4.1"
+
+[[bin]]
+name = "sgen"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = false
